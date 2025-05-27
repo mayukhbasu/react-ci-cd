@@ -8,7 +8,7 @@ describe('users reducer', () => {
     loading: false,
     error: ''
   }
-  it('should handle initial state', () => {
+  it('should handle initial state1', () => {
     expect(usersReducer(undefined, {type: 'unknown'})).toEqual(initialState);
   });
 
