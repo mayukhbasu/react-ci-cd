@@ -1,47 +1,52 @@
-name: Deploy React App to GCS
+name: Build & Deploy UI with SemVer
 
 on:
   push:
-    branches: [ci-cd]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     env:
-      GCS_BUCKET: custody-backend-java-frontend
+      BUCKET_NAME: custody-backend-java-frontend
       GCP_PROJECT_ID: custody-backend-java
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set SemVer version from tag
+        id: set_version
+        run: |
+          VERSION=$(git describe --tags --abbrev=0)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build the app
-        run: npm run build
+      - name: Build React app with version
+        run: |
+          REACT_APP_VERSION=$VERSION npm run build
+          echo "$VERSION" > build/version.txt
 
-      - name: Authenticate SDK for `gcloud` and `gsutil1`
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - name: Authenticate with GCP
+        run: |
+          echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > $HOME/key.json
+          gcloud auth activate-service-account --key-file=$HOME/key.json
+          gcloud config set project $GCP_PROJECT_ID
 
-      - name: Set GCP project
-        run: gcloud config set project $GCP_PROJECT_ID
+      - name: Upload to GCS with version
+        run: |
+          gsutil -m cp -r build/* gs://$BUCKET_NAME/$VERSION/
+          gsutil -m cp -r build/* gs://$BUCKET_NAME/latest/
 
-      - name: Upload build folder to GCS
-        uses: google-github-actions/upload-cloud-storage@v1
-        with:
-          path: build
-          destination: ${{ env.GCS_BUCKET }}
-          parent: false
-
-      - name: Set bucket website config
-        run: gsutil web set -m index.html -e 404.html gs://${{ env.GCS_BUCKET }}
+      - name: Set bucket website config (only needed once)
+        run: |
+          gsutil web set -m index.html -e 404.html gs://$BUCKET_NAME
