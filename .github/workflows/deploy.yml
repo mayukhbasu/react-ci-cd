@@ -2,7 +2,7 @@ name: Deploy React App to GCS
 
 on:
   push:
-    branches: [ci-cd]  # Change to your default branch if needed
+    branches: [ci-cd]
   workflow_dispatch:
 
 jobs:
@@ -28,12 +28,12 @@ jobs:
       - name: Build the app
         run: npm run build
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate SDK for `gcloud`-based steps
         uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Set GCP Project
+      - name: Set GCP project (for completeness)
         run: gcloud config set project $GCP_PROJECT_ID
 
       - name: Upload build folder to GCS
@@ -43,8 +43,19 @@ jobs:
           destination: ${{ env.GCS_BUCKET }}
           parent: false
 
+      - name: Write GCP key file for gsutil
+        run: echo "${{ secrets.GCP_SA_KEY }}" > ${{ github.workspace }}/gcp-key.json
+
+      - name: Authorize gsutil with service account
+        run: |
+          gcloud auth activate-service-account --key-file="${{ github.workspace }}/gcp-key.json"
+          gcloud config set project $GCP_PROJECT_ID
+
       - name: Make all files public
         run: gsutil -m acl ch -r -u AllUsers:R gs://${{ env.GCS_BUCKET }}
 
       - name: Set bucket website config
         run: gsutil web set -m index.html -e 404.html gs://${{ env.GCS_BUCKET }}
+
+      - name: Cleanup key file
+        run: rm ${{ github.workspace }}/gcp-key.json
