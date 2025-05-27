@@ -47,7 +47,7 @@ jobs:
         run: |
           printf '%s' "${{ secrets.GCP_SA_KEY }}" > ${{ github.workspace }}/gcp-key.json
 
-      - name: Authorize1 gsutil with service account
+      - name: Authorize gsutil with service account
         run: |
           gcloud auth activate-service-account --key-file="${{ github.workspace }}/gcp-key.json"
           gcloud config set project $GCP_PROJECT_ID
