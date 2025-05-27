@@ -36,7 +36,7 @@ jobs:
       - name: Set GCP project
         run: gcloud config set project $GCP_PROJECT_ID
 
-      - name: Upload build folder to GCS
+      - name: Upload1 build folder to GCS
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: build
