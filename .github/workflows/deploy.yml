@@ -44,7 +44,8 @@ jobs:
           parent: false
 
       - name: Write GCP key file for gsutil
-        run: echo "${{ secrets.GCP_SA_KEY }}" > ${{ github.workspace }}/gcp-key.json
+        run: |
+          printf '%s' "${{ secrets.GCP_SA_KEY }}" > ${{ github.workspace }}/gcp-key.json
 
       - name: Authorize1 gsutil with service account
         run: |
