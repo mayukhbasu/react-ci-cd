@@ -43,8 +43,5 @@ jobs:
           destination: ${{ env.GCS_BUCKET }}
           parent: false
 
-      - name: Make all files public
-        run: gsutil -m acl ch -r -u AllUsers:R gs://${{ env.GCS_BUCKET }}
-
       - name: Set bucket website config
         run: gsutil web set -m index.html -e 404.html gs://${{ env.GCS_BUCKET }}
