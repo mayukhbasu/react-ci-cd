@@ -43,6 +43,11 @@ jobs:
           destination: ${{ env.GCS_BUCKET }}
           parent: false
 
+      - name: Authorize gsutil with service account
+        run: |
+          gcloud auth activate-service-account --key-file="${{ secrets.GCP_SA_KEY }}"
+          gcloud config set project $GCP_PROJECT_ID
+
       - name: Make all files public
         run: gsutil -m acl ch -r -u AllUsers:R gs://${{ env.GCS_BUCKET }}
 
